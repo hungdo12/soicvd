@@ -1,0 +1,856 @@
+<title>Soi CVD Token</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: thanh công cụ nhập liệu ở trên, tóm tắt "điều đáng chú ý", biểu đồ nến + CVD, rồi các thẻ phân tích dòng tiền */
+:root{
+  --bg:#f3f6f8; --card:#ffffff; --card2:#f7f9fb; --ink:#14212b; --mute:#5a6b7a; --line:#dde4ea;
+  --accent:#2a6fdb; --accent-ink:#ffffff; --price:#374151; --cvd:#2a6fdb;
+  --up:#1b9e8a; --down:#e07a1f; --good:#1b9e8a; --warn:#c98a0b; --bad:#d4472f;
+  --good-bg:#e2f5f1; --warn-bg:#fbf1d9; --bad-bg:#fbe6e1; --info-bg:#e5eefc;
+  --grid:#e6ecf0; --shadow:0 1px 2px rgba(20,33,43,.06),0 4px 14px rgba(20,33,43,.04);
+  --font:'Manrope',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0d141a; --card:#151e26; --card2:#1a252f; --ink:#e6edf3; --mute:#92a3b3; --line:#263441;
+  --accent:#5b9bff; --accent-ink:#0b1219; --price:#cbd5e1; --cvd:#5b9bff;
+  --up:#34c9b0; --down:#f0974a; --good:#34c9b0; --warn:#e5b13a; --bad:#f0735c;
+  --good-bg:#123029; --warn-bg:#33290f; --bad-bg:#3a1c16; --info-bg:#172a45;
+  --grid:#202d38; --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0d141a; --card:#151e26; --card2:#1a252f; --ink:#e6edf3; --mute:#92a3b3; --line:#263441;
+  --accent:#5b9bff; --accent-ink:#0b1219; --price:#cbd5e1; --cvd:#5b9bff;
+  --up:#34c9b0; --down:#f0974a; --good:#34c9b0; --warn:#e5b13a; --bad:#f0735c;
+  --good-bg:#123029; --warn-bg:#33290f; --bad-bg:#3a1c16; --info-bg:#172a45;
+  --grid:#202d38; --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark;}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.55;
+  padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-size:22px;font-weight:800;margin:0;letter-spacing:-.01em}
+h2{font-size:15px;font-weight:700;margin:0 0 10px;letter-spacing:.01em}
+h3{font-size:13px;font-weight:700;margin:0 0 6px}
+p{margin:0 0 8px}
+.mono,.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.sub{color:var(--mute);font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:var(--shadow);min-width:0}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);font-weight:700}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:9px 11px;min-width:0}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#contract{font-family:var(--mono);font-size:13px;width:min(460px,100%)}
+textarea{font-family:var(--mono);font-size:12px;width:100%;min-height:90px;resize:vertical}
+button{font:inherit;font-weight:700;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--ink);padding:9px 14px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button:disabled{opacity:.55;cursor:wait}
+.status{font-size:13px;color:var(--mute);min-height:20px}
+.banner{border-radius:10px;padding:10px 12px;font-size:13px;background:var(--info-bg)}
+.banner.warn{background:var(--warn-bg)} .banner.bad{background:var(--bad-bg)}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.pill.good{background:var(--good-bg);color:var(--good)} .pill.warn{background:var(--warn-bg);color:var(--warn)}
+.pill.bad{background:var(--bad-bg);color:var(--bad)} .pill.info{background:var(--info-bg);color:var(--accent)}
+.pill.mute{background:var(--card2);color:var(--mute);border:1px solid var(--line)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi{background:var(--card2);border-radius:10px;padding:10px 12px;min-width:0}
+.kpi .l{font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+.kpi .v{font-family:var(--mono);font-size:18px;font-weight:600;margin-top:2px;overflow-wrap:anywhere}
+.up{color:var(--up)} .dn{color:var(--down)}
+ul.find{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+ul.find li{display:flex;gap:10px;align-items:flex-start;padding:9px 11px;border-radius:9px;background:var(--card2)}
+ul.find li .dot{flex:none;width:9px;height:9px;border-radius:50%;margin-top:6px;background:var(--mute)}
+ul.find li.good .dot{background:var(--good)} ul.find li.warn .dot{background:var(--warn)} ul.find li.bad .dot{background:var(--bad)} ul.find li.info .dot{background:var(--accent)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{padding:6px 12px;font-size:13px;border-radius:999px}
+.tab[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.chartbox{position:relative;width:100%;min-width:0}
+canvas{display:block;width:100%}
+.tip{position:absolute;pointer-events:none;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:var(--shadow);z-index:3;display:none;min-width:150px}
+.tip b{font-family:var(--mono);font-weight:600}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--mute);align-items:center}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px}
+.pat{display:flex;gap:10px;padding:10px 12px;border-radius:10px;background:var(--card2);margin-bottom:8px}
+.pat .pb{flex:none}
+.pat .pt{font-weight:700} .pat .px{color:var(--mute);font-size:13px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)}
+td.r,th.r{text-align:right}
+.chk{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:8px}
+.chk div{background:var(--card2);border-radius:9px;padding:8px 10px;font-size:13px}
+.chk .ok{color:var(--good);font-weight:700} .chk .no{color:var(--bad);font-weight:700}
+details{background:var(--card2);border-radius:10px;padding:10px 12px}
+summary{cursor:pointer;font-weight:700}
+details p{margin-top:8px;color:var(--mute)}
+.foot{font-size:12px;color:var(--mute)}
+#tbtn{padding:6px 10px}
+@media (max-width:520px){h1{font-size:19px}.kpi .v{font-size:16px}}
+@media (prefers-reduced-motion:no-preference){.card{transition:border-color .15s}}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>Soi CVD Token</h1>
+      <div class="sub">Nhập contract, xem dòng tiền mua/bán thật, biểu đồ nến + CVD và các mô hình giá.</div>
+    </div>
+    <button id="tbtn" type="button" aria-label="Đổi giao diện sáng/tối">Sáng / Tối</button>
+  </div>
+
+  <section class="card" aria-label="Nhập liệu">
+    <div class="row">
+      <div class="field" style="flex:1 1 320px">
+        <label for="contract">Contract token</label>
+        <input id="contract" type="text" placeholder="0x88ad8ddf1e3898412146a534538d418c6f8a9062" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="field">
+        <label for="net">Mạng</label>
+        <select id="net">
+          <option value="robinhood">Robinhood Chain</option><option value="eth">Ethereum</option>
+          <option value="base">Base</option><option value="bsc">BNB Chain</option>
+          <option value="arbitrum">Arbitrum</option><option value="solana">Solana</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="poolin">Pool (không bắt buộc)</label>
+        <input id="poolin" type="text" placeholder="tự chọn pool lớn nhất" style="width:200px" autocomplete="off" spellcheck="false">
+      </div>
+      <button id="go" class="primary" type="button">Phân tích</button>
+      <button id="demo" type="button">Chạy demo</button>
+    </div>
+    <div class="status" id="status" role="status" aria-live="polite"></div>
+    <div id="netbanner" class="banner warn" hidden></div>
+    <details style="margin-top:10px">
+      <summary>Không tải trực tiếp được? Dán dữ liệu thủ công</summary>
+      <p>Mở 2 đường link dưới (sau khi nhập contract và pool), bấm chọn hết nội dung JSON rồi dán vào ô tương ứng. Cần nhập contract ở trên để tool biết lệnh nào là mua, lệnh nào là bán.</p>
+      <div id="links" class="sub" style="margin:6px 0"></div>
+      <div class="grid2">
+        <div class="field"><label for="ptrades">JSON lệnh swap (trades)</label><textarea id="ptrades" placeholder='{"data":[...]}'></textarea></div>
+        <div class="field"><label for="pohlcv">JSON nến (ohlcv), không bắt buộc</label><textarea id="pohlcv" placeholder='{"data":{"attributes":{"ohlcv_list":[...]}}}'></textarea></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div class="field"><label for="ptf">Khung của JSON nến</label>
+          <select id="ptf"><option value="1m">1m</option><option value="5m">5m</option><option value="15m">15m</option><option value="1h" selected>1h</option><option value="4h">4h</option><option value="1d">1d</option></select></div>
+        <div class="field"><label for="pliq">Thanh khoản pool (USD)</label><input id="pliq" type="number" min="0" placeholder="14130000" style="width:160px"></div>
+        <button id="pgo" type="button">Phân tích dữ liệu dán</button>
+      </div>
+    </details>
+  </section>
+
+  <div id="out" hidden>
+    <div class="wrap" style="max-width:none">
+      <section class="card" id="sec-sum">
+        <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px">
+          <h2 style="margin:0" id="symtitle">Điều đáng chú ý</h2>
+          <span id="srcpill" class="pill mute"></span>
+        </div>
+        <ul class="find" id="finds"></ul>
+        <div class="kpis" id="kpis" style="margin-top:12px"></div>
+      </section>
+
+      <section class="card" id="sec-big">
+        <h2>Bức tranh khung lớn (1h · 4h · 1d)</h2>
+        <p class="sub">Giá, đỉnh đáy và mô hình ở khung lớn lấy từ nến thật của sàn nên đáng tin hơn khung nhỏ. Khung lớn quyết định hướng đi, khung nhỏ chỉ để chọn điểm vào.</p>
+        <div class="scroll" id="bigtable"></div>
+        <ul class="find" id="bigfind" style="margin-top:12px"></ul>
+      </section>
+
+      <section class="card" id="sec-chart">
+        <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px">
+          <h2 style="margin:0">Biểu đồ giá + CVD</h2>
+          <div class="tabs" id="tabs" role="group" aria-label="Khung thời gian"></div>
+        </div>
+        <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div class="legend">
+            <span><i style="background:var(--up)"></i>Nến tăng / mua</span>
+            <span><i style="background:var(--down)"></i>Nến giảm / bán</span>
+            <span><i style="background:var(--cvd)"></i>CVD (mua ròng cộng dồn)</span>
+            <span><i style="background:var(--warn)"></i>Hỗ trợ / kháng cự</span>
+          </div>
+          <div class="row" style="gap:14px;align-items:center">
+            <label class="sub"><input type="checkbox" id="ovl" checked style="padding:0"> Vẽ mô hình</label>
+            <label class="sub"><input type="checkbox" id="logp" style="padding:0"> Giá dạng log</label>
+          </div>
+        </div>
+        <div id="srcnote" class="banner" style="margin-bottom:8px" hidden></div>
+        <div class="chartbox" id="cbox"><canvas id="chart" role="img" aria-label="Biểu đồ nến giá, đường CVD và cột delta"></canvas><div class="tip" id="tip"></div></div>
+      </section>
+
+      <section class="card" id="sec-pat">
+        <h2>Mô hình chart đang thấy</h2>
+        <div id="pats"></div>
+      </section>
+
+      <div class="grid2">
+        <section class="card"><h2>Chất lượng dòng tiền</h2><div class="chk" id="chk"></div><p class="foot" style="margin-top:10px" id="chkfoot"></p></section>
+        <section class="card"><h2>Giá dự kiến theo dòng tiền và giá thực tế</h2><div id="amm"></div></section>
+      </div>
+
+      <div class="grid2">
+        <section class="card"><h2>Cụm lệnh lớn</h2><div class="scroll" id="events"></div></section>
+        <section class="card"><h2>Ví đáng chú ý</h2><div class="scroll" id="wallets"></div></section>
+      </div>
+
+      <section class="card"><h2>Bối cảnh theo khung thời gian (ước lượng từ nến)</h2>
+        <p class="sub">Đây chỉ là bối cảnh. CVD tính từ nến được suy ra từ hình dáng nến nên luôn đi cùng chiều giá, không phải bằng chứng độc lập.</p>
+        <div class="scroll" id="mtf"></div>
+      </section>
+
+      <details>
+        <summary>Giải thích thuật ngữ (cho người không làm IT)</summary>
+        <p><b>CVD</b> là tổng cộng dồn của (tiền mua − tiền bán) theo thời gian. Tăng nghĩa là mua nhiều hơn bán tính từ điểm bắt đầu.</p>
+        <p><b>Lệnh thật / ước lượng</b>: lệnh thật là từng giao dịch swap đọc từ blockchain, biết rõ mua hay bán. Ước lượng là đoán từ cây nến nên chỉ để tham khảo.</p>
+        <p><b>Tỷ lệ lõi</b>: tỷ lệ mua ròng sau khi bỏ 3 lệnh lớn nhất. Nếu vẫn cùng chiều, dòng tiền không phụ thuộc vài lệnh khủng.</p>
+        <p><b>Ví mua/bán ròng</b>: ví có tổng mua lớn hơn tổng bán (hoặc ngược lại) trong cửa sổ dữ liệu.</p>
+        <p><b>Đám đông còn lại</b>: loại bỏ 3 ví mua lớn nhất và 3 ví bán lớn nhất, xem số còn lại nghiêng về bên nào.</p>
+        <p><b>Giá dự kiến theo dòng tiền</b>: pool AMM (kiểu Uniswap) có giá là hàm của lượng mua/bán ròng so với thanh khoản. Nếu giá thực tế lệch xa mức dự kiến, có thể thanh khoản vừa được thêm hoặc rút.</p>
+        <p><b>Hỗ trợ / kháng cự</b>: vùng giá từng bị chạm nhiều lần và quay đầu. <b>Phá vỡ</b> là giá đóng cửa vượt qua vùng đó.</p>
+        <p><b>Phân kỳ</b>: giá lập đỉnh/đáy mới nhưng CVD không theo, thường báo hiệu lực yếu dần. Với CVD ước lượng thì chỉ tham khảo.</p>
+      </details>
+      <p class="foot">Công cụ phân tích dữ liệu công khai, chỉ mang tính tham khảo, không phải lời khuyên đầu tư. Memecoin có thể mất toàn bộ giá trị.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+var $=function(s){return document.querySelector(s)};
+var TF=[['1m','minute',1,60],['5m','minute',5,300],['15m','minute',15,900],['1h','hour',1,3600],['4h','hour',4,14400],['1d','day',1,86400]];
+var GT='https://api.geckoterminal.com/api/v2';
+var S={contract:'',symbol:'TOKEN',liq:0,trades:[],candles:{},tf:'real',src:'demo',bars:{},det:null,flow:null,hover:-1};
+
+/* ---------- tiện ích ---------- */
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms)})}
+function median(a){if(!a.length)return 0;var s=a.slice().sort(function(x,y){return x-y}),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2}
+function usd(n){var a=Math.abs(n),s=n<0?'-':'';if(a>=1e6)return s+'$'+(a/1e6).toFixed(2)+'M';if(a>=1e3)return s+'$'+(a/1e3).toFixed(1)+'K';return s+'$'+a.toFixed(0)}
+function sgn(n,d){return (n>=0?'+':'-')+Math.abs(n).toFixed(d==null?1:d)}
+function pc(x,d){return sgn(x*100,d==null?1:d)+'%'}
+function fmtP(p){if(!isFinite(p))return '-';if(p>=100)return p.toFixed(2);if(p>=1)return p.toFixed(3);if(p>=0.01)return p.toFixed(4);if(p>=0.0001)return p.toFixed(6);return p.toExponential(2)}
+function short(a){a=String(a||'?');return a.length>12?a.slice(0,6)+'…'+a.slice(-4):a}
+function two(n){return (n<10?'0':'')+n}
+function tFmt(ts,long){var d=new Date(ts*1000);var s=two(d.getHours())+':'+two(d.getMinutes());if(long)return two(d.getDate())+'/'+two(d.getMonth()+1)+' '+s;return s}
+function dFmt(ts){var d=new Date(ts*1000);return two(d.getDate())+'/'+two(d.getMonth()+1)}
+function sg(x,th){return x>th?1:(x<-th?-1:0)}
+function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+function setStatus(t){$('#status').textContent=t}
+
+/* ---------- lấy dữ liệu trực tiếp ---------- */
+var lastCall=0;
+function gt(path){
+  var run=function(k){
+    var wait=Math.max(0,lastCall+2600-Date.now());
+    return sleep(wait).then(function(){
+      lastCall=Date.now();
+      return fetch(GT+path,{headers:{'Accept':'application/json;version=20230302'}});
+    }).then(function(r){
+      if(r.status===429){if(k>=3)throw new Error('Bị giới hạn tốc độ (429)');return sleep(4000*(k+1)).then(function(){return run(k+1)})}
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      return r.json();
+    });
+  };
+  return run(0);
+}
+function parseTrades(arr,contract){
+  var c=(contract||'').toLowerCase(),out=[];
+  (arr||[]).forEach(function(d){
+    var a=d.attributes||d;if(!a)return;
+    var v=parseFloat(a.volume_in_usd);if(!(v>0))return;
+    var ts=Math.floor(new Date(a.block_timestamp).getTime()/1000);if(!ts)return;
+    var to=(a.to_token_address||'').toLowerCase(),fr=(a.from_token_address||'').toLowerCase();
+    var side=null,price=NaN;
+    if(c&&to===c){side='buy';price=parseFloat(a.price_to_in_usd)}
+    else if(c&&fr===c){side='sell';price=parseFloat(a.price_from_in_usd)}
+    else if(a.kind==='buy'||a.kind==='sell'){side=a.kind;price=parseFloat(a.price_to_in_usd||a.price_from_in_usd)}
+    if(!side||!(price>0))return;
+    out.push({ts:ts,usd:v,side:side,price:price,wallet:(a.tx_from_address||'?').toLowerCase(),hash:a.tx_hash||''});
+  });
+  out.sort(function(x,y){return x.ts-y.ts});
+  return out;
+}
+function parseOhlcv(j){
+  var l=((j&&j.data&&j.data.attributes&&j.data.attributes.ohlcv_list)||(j&&j.ohlcv_list)||[]);
+  var r=l.map(function(x){return {t:+x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4],v:+x[5]}}).filter(function(b){return b.c>0});
+  r.sort(function(a,b){return a.t-b.t});return r;
+}
+function liveRun(){
+  var ca=$('#contract').value.trim(),net=$('#net').value,pool=$('#poolin').value.trim();
+  if(!ca){setStatus('Hãy nhập contract token.');return}
+  $('#go').disabled=true;$('#demo').disabled=true;$('#netbanner').hidden=true;
+  var meta={liq:0,name:'TOKEN',pool:pool};
+  var step=Promise.resolve();
+  if(!pool){
+    step=step.then(function(){setStatus('Đang tìm pool lớn nhất của token…');return gt('/networks/'+net+'/tokens/'+ca+'/pools?page=1')}).then(function(j){
+      var d=(j.data||[]).slice().sort(function(a,b){return (+b.attributes.reserve_in_usd||0)-(+a.attributes.reserve_in_usd||0)})[0];
+      if(!d)throw new Error('Không thấy pool nào cho contract này trên mạng đã chọn.');
+      meta.pool=d.attributes.address;meta.liq=+d.attributes.reserve_in_usd||0;meta.name=d.attributes.name||'TOKEN';
+    });
+  }else{
+    step=step.then(function(){return gt('/networks/'+net+'/pools/'+pool)}).then(function(j){var a=(j.data||{}).attributes||{};meta.liq=+a.reserve_in_usd||0;meta.name=a.name||'TOKEN'}).catch(function(){});
+  }
+  var trades,candles={},cstat={};
+  step.then(function(){setStatus('Đang tải 300 lệnh swap gần nhất…');return gt('/networks/'+net+'/pools/'+meta.pool+'/trades')}).then(function(j){
+    trades=parseTrades(j.data,ca);
+    if(trades.length<20)throw new Error('Pool có quá ít lệnh ('+trades.length+') để phân tích.');
+    var chain=Promise.resolve();
+    TF.slice().reverse().forEach(function(f){
+      chain=chain.then(function(){setStatus('Đang tải nến '+f[0]+'…');
+        var q='/networks/'+net+'/pools/'+meta.pool+'/ohlcv/'+f[1]+'?aggregate='+f[2]+'&limit=300&currency=usd&token='+ca;
+        return gt(q).catch(function(){return gt(q.replace('&token='+ca,''))}).then(function(j2){candles[f[0]]=parseOhlcv(j2);cstat[f[0]]={n:candles[f[0]].length}}).catch(function(e){candles[f[0]]=[];cstat[f[0]]={n:0,err:(e&&e.message)||'lỗi không rõ'}});
+      });
+    });
+    return chain;
+  }).then(function(){
+    S.contract=ca;S.symbol=meta.name;S.liq=meta.liq;S.trades=trades;S.candles=candles;S.cstat=cstat;S.src='live';
+    $('#pliq').value=meta.liq||'';
+    start();setStatus('Xong. Dữ liệu trực tiếp từ GeckoTerminal.');
+  }).catch(function(e){
+    var m=(e&&e.message)||String(e);
+    var cors=/Failed to fetch|NetworkError|Load failed/i.test(m);
+    setStatus('Không tải được: '+(cors?'trình duyệt chặn truy cập tới GeckoTerminal.':m));
+    var b=$('#netbanner');b.hidden=false;
+    b.textContent=cors?'Trang này đang chạy trong môi trường không cho gọi API bên ngoài (hoặc GeckoTerminal từ chối CORS). Hãy mở file HTML tải về bằng trình duyệt trên máy, hoặc dùng mục "Dán dữ liệu thủ công" bên dưới. Có thể bấm "Chạy demo" để xem tool hoạt động.':'Lỗi: '+m;
+    updateLinks();
+  }).then(function(){$('#go').disabled=false;$('#demo').disabled=false});
+}
+function updateLinks(){
+  var ca=$('#contract').value.trim(),net=$('#net').value,pool=$('#poolin').value.trim();
+  var h='';
+  if(ca){
+    h+='1) Tìm pool: <a href="'+esc(GT)+'/networks/'+esc(net)+'/tokens/'+esc(ca)+'/pools" target="_blank" rel="noopener">danh sách pool</a>. Lấy trường "address" của pool lớn nhất.<br>';
+    if(pool){
+      h+='2) <a href="'+esc(GT)+'/networks/'+esc(net)+'/pools/'+esc(pool)+'/trades" target="_blank" rel="noopener">Lệnh swap (trades)</a> · nến: ';
+      TF.forEach(function(f){h+='<a href="'+esc(GT)+'/networks/'+esc(net)+'/pools/'+esc(pool)+'/ohlcv/'+f[1]+'?aggregate='+f[2]+'&limit=150&currency=usd&token='+esc(ca)+'" target="_blank" rel="noopener">'+f[0]+'</a> '});
+    }else h+='2) Nhập địa chỉ pool ở ô "Pool" để hiện link trades và nến.';
+  }else h='Nhập contract để hiện link.';
+  $('#links').innerHTML=h;
+}
+function pasteRun(){
+  var ca=$('#contract').value.trim();
+  try{
+    var jt=JSON.parse($('#ptrades').value);
+    var tr=parseTrades(jt.data||jt,ca);
+    if(tr.length<20){setStatus('Dữ liệu trades quá ít hoặc sai định dạng ('+tr.length+' lệnh đọc được).');return}
+    var cd={};
+    var ot=$('#pohlcv').value.trim();
+    if(ot){cd[$('#ptf').value]=parseOhlcv(JSON.parse(ot))}
+    S.contract=ca;S.symbol='Dữ liệu dán';S.liq=+$('#pliq').value||0;S.trades=tr;S.candles=cd;S.cstat={};S.src='paste';
+    start();setStatus('Xong. Phân tích dữ liệu bạn dán.');
+  }catch(e){setStatus('Không đọc được JSON: '+e.message)}
+}
+
+/* ---------- dữ liệu demo ---------- */
+function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;var t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function demoData(){
+  var R=rng(11),gauss=function(){var u=0,v=0;while(!u)u=R();while(!v)v=R();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
+  var now=Math.floor(Date.now()/60)*60,D=160,N=D*1440,start=now-N*60;
+  var tgt=function(m){var d=m/1440;
+    if(d<100)return Math.log(0.03)+0.35*Math.sin(d/9)+0.15*Math.sin(d/3.1);
+    if(d<103)return Math.log(0.03)+(d-100)/3*Math.log(18);
+    if(d<106)return Math.log(0.54)-(d-103)/3*Math.log(2.3);
+    if(d<D-1)return Math.log(0.235)+0.06*Math.sin((d-106)*0.9);
+    return Math.log(0.235)+0.04*Math.sin((d-106)*0.9)-0.015*Math.sin((m-(D-1)*1440)/300)};
+  var path=new Array(N),x=0;
+  for(var i=0;i<N;i++){x+=-0.02*x+0.0035*gauss();path[i]=Math.exp(tgt(i)+x)}
+  var min=[];
+  for(var j=0;j<N;j++){var o=j?path[j-1]:path[0],c=path[j],w=Math.abs(gauss())*0.0012;
+    var d=j/1440,vb=(d>=100&&d<106)?1800:380;
+    min.push({t:start+j*60,o:o,h:Math.max(o,c)*(1+w),l:Math.min(o,c)*(1-w),c:c,v:vb*Math.exp(0.8*gauss())})}
+  var candles={};
+  TF.forEach(function(f){
+    var size=f[3]/60,bars=[];
+    for(var k=0;k<N;k+=size){var sl=min.slice(k,k+size);if(sl.length<size)break;
+      var h=-1,l=1e9,v=0;for(var q=0;q<sl.length;q++){if(sl[q].h>h)h=sl[q].h;if(sl[q].l<l)l=sl[q].l;v+=sl[q].v}
+      bars.push({t:sl[0].t,o:sl[0].o,h:h,l:l,c:sl[sl.length-1].c,v:v})}
+    candles[f[0]]=bars.slice(-150)});
+  var wallets=[];for(var w=0;w<150;w++){var s='0x';for(var z=0;z<40;z++)s+='0123456789abcdef'[(R()*16)|0];wallets.push(s)}
+  var W1=wallets[3],W2=wallets[7],W3=wallets[11],W4=wallets[19];
+  var span=16*3600,tr=[];
+  function px(ts){var idx=Math.min(N-1,Math.max(0,Math.floor((ts-start)/60)));return path[idx]}
+  var ts=[];for(var u=0;u<286;u++)ts.push(now-Math.floor(R()*span));
+  ts.sort(function(a,b){return a-b});
+  ts.forEach(function(t){var side=R()<0.47?'buy':'sell';var u2=Math.min(2200,Math.exp(Math.log(110)+1.05*gauss()));
+    var wi=Math.floor(Math.pow(R(),1.6)*140)+20;
+    tr.push({ts:t,usd:u2,side:side,price:px(t)*(side==='buy'?1.0075:0.9925),wallet:wallets[wi],hash:''})});
+  [[-11*3600,W1,3,31000],[-4.5*3600,W2,2,34000]].forEach(function(b){for(var q=0;q<b[2];q++){var t=now+b[0]+q*70;tr.push({ts:t,usd:b[3]*(0.9+R()*0.2),side:'sell',price:px(t)*0.9925,wallet:b[1],hash:''})}});
+  [[-3.2*3600,W3,2,18000],[-1.1*3600,W4,2,17500],[-2.1*3600,W3,1,19000]].forEach(function(b){for(var q=0;q<b[2];q++){var t=now+b[0]+q*95;tr.push({ts:t,usd:b[3]*(0.9+R()*0.2),side:'buy',price:px(t)*1.0075,wallet:b[1],hash:''})}});
+  tr.sort(function(a,b){return a.ts-b.ts});
+  return {trades:tr,candles:candles};
+}
+function demoRun(noScroll){
+  var d=demoData();
+  S.contract='demo';S.symbol='TOKEN MẪU / WETH';S.liq=14130000;S.trades=d.trades;S.candles=d.candles;S.cstat={};S.src='demo';
+  $('#pliq').value=S.liq;
+  start(noScroll===true);setStatus('Đang xem dữ liệu mẫu tự sinh, không phải token thật.');
+}
+
+/* ---------- tạo thanh nến ---------- */
+function barsFromTrades(tr){
+  if(tr.length<2)return [];
+  var span=tr[tr.length-1].ts-tr[0].ts,sizes=[60,300,900,1800,3600,7200],size=sizes[sizes.length-1];
+  for(var i=0;i<sizes.length;i++){if(span/sizes[i]<=80){size=sizes[i];break}}
+  var t0=Math.floor(tr[0].ts/size)*size,n=Math.floor((tr[tr.length-1].ts-t0)/size)+1,b=[];
+  for(var k=0;k<n;k++)b.push({t:t0+k*size,o:null,h:null,l:null,c:null,v:0,buy:0,sell:0,n:0});
+  tr.forEach(function(t){var x=b[Math.floor((t.ts-t0)/size)];
+    if(!x.n){x.o=t.price;x.h=t.price;x.l=t.price}else{if(t.price>x.h)x.h=t.price;if(t.price<x.l)x.l=t.price}
+    x.c=t.price;x.n++;x.v+=t.usd;if(t.side==='buy')x.buy+=t.usd;else x.sell+=t.usd});
+  var prev=b[0].c;
+  b.forEach(function(x){if(!x.n){x.o=x.h=x.l=x.c=prev}else prev=x.c});
+  return finishBars(b,true);
+}
+function barsFromCandles(c){
+  var b=c.map(function(x){var rg=x.h-x.l,bu=rg>0?x.v*(x.c-x.l)/rg:x.v/2;return {t:x.t,o:x.o,h:x.h,l:x.l,c:x.c,v:x.v,buy:bu,sell:x.v-bu,n:null}});
+  return finishBars(b,false);
+}
+function aggregate(src,size){
+  var m=new Map(),keys=[];
+  src.forEach(function(x){var k=Math.floor(x.t/size)*size,g=m.get(k);
+    if(!g){g={t:k,o:x.o,h:x.h,l:x.l,c:x.c,v:x.v};m.set(k,g);keys.push(k)}
+    else{if(x.h>g.h)g.h=x.h;if(x.l<g.l)g.l=x.l;g.c=x.c;g.v+=x.v}});
+  keys.sort(function(a,b){return a-b});
+  return keys.map(function(k){return m.get(k)});
+}
+function ensureFrames(){
+  var used={},der={};
+  TF.forEach(function(f){used[f[0]]=(S.candles[f[0]]||[]).slice()});
+  ['1h','4h','1d'].forEach(function(name){
+    var tgt=TF.filter(function(f){return f[0]===name})[0],size=tgt[3];
+    if(used[name].length>=20)return;
+    var srcs=TF.filter(function(f){return f[3]<size&&size%f[3]===0&&used[f[0]].length}).sort(function(a,b){return b[3]-a[3]});
+    for(var i=0;i<srcs.length;i++){
+      var ag=aggregate(used[srcs[i][0]],size);
+      if(ag.length>used[name].length){used[name]=ag;der[name]=srcs[i][0];break}
+    }
+  });
+  S.used=used;S.der=der;
+}
+function finishBars(b,real){var cv=0;b.forEach(function(x){x.d=x.buy-x.sell;cv+=x.d;x.cvd=cv;x.real=real});return b}
+
+/* ---------- phân tích dòng tiền thật ---------- */
+function analyzeFlow(tr,liq){
+  if(tr.length<20)return null;
+  var buy=0,sell=0,nb=0,ns=0;
+  tr.forEach(function(t){if(t.side==='buy'){buy+=t.usd;nb++}else{sell+=t.usd;ns++}});
+  var tot=buy+sell,net=buy-sell,ratio=net/tot,main=sg(ratio,0.03);
+  var top=tr.slice().sort(function(a,b){return b.usd-a.usd}).slice(0,3),topSet=new Set(top);
+  var cb=0,cs=0;tr.forEach(function(t){if(topSet.has(t))return;if(t.side==='buy')cb+=t.usd;else cs+=t.usd});
+  var core=(cb-cs)/((cb+cs)||1);
+  var W=new Map();
+  tr.forEach(function(t){var w=W.get(t.wallet);if(!w){w={a:t.wallet,buy:0,sell:0,n:0};W.set(t.wallet,w)}if(t.side==='buy')w.buy+=t.usd;else w.sell+=t.usd;w.n++});
+  var ws=Array.from(W.values()),netBuyers=0,netSellers=0,wash=0;
+  ws.forEach(function(w){var n=w.buy-w.sell;if(n>0)netBuyers++;else if(n<0)netSellers++;wash+=2*Math.min(w.buy,w.sell)});
+  wash=wash/tot;
+  var byBuy=ws.slice().sort(function(a,b){return b.buy-a.buy}),bySell=ws.slice().sort(function(a,b){return b.sell-a.sell});
+  var tb=byBuy.slice(0,3),tsl=bySell.slice(0,3);
+  var share=function(arr,k,total){var s=0;arr.forEach(function(w){s+=w[k]});return total?s/total:0};
+  var topBuyShare=share(tb,'buy',buy),topSellShare=share(tsl,'sell',sell);
+  var ex=new Set();tb.concat(tsl).forEach(function(w){ex.add(w.a)});
+  var rb=0,rs=0;tr.forEach(function(t){if(ex.has(t.wallet))return;if(t.side==='buy')rb+=t.usd;else rs+=t.usd});
+  var crowd=(rb-rs)/((rb+rs)||1);
+  var segs=[],per=Math.floor(tr.length/6);
+  for(var s=0;s<6;s++){var sl=tr.slice(s*per,s===5?tr.length:(s+1)*per),a=0,c=0;sl.forEach(function(t){if(t.side==='buy')a+=t.usd;else c+=t.usd});segs.push((a-c)/((a+c)||1))}
+  var segAgree=segs.filter(function(x){return sg(x,0.03)===main}).length;
+  var ind=[];
+  if(main!==0){
+    var winTop=main>0?topBuyShare:topSellShare;
+    ind=[
+      {k:'Bỏ 3 lệnh lớn nhất vẫn cùng chiều',ok:sg(core,0.02)===main,d:'Tỷ lệ lõi '+pc(core)},
+      {k:'Số lệnh cùng chiều',ok:sg((nb-ns)/(nb+ns),0.02)===main,d:nb+' mua / '+ns+' bán'},
+      {k:'Số ví cùng chiều',ok:sg((netBuyers-netSellers)/((netBuyers+netSellers)||1),0.02)===main,d:netBuyers+' ví mua ròng / '+netSellers+' ví bán ròng'},
+      {k:'Đều theo thời gian',ok:segAgree>=4,d:segAgree+'/6 đoạn cùng chiều'},
+      {k:'Không dồn vào vài ví',ok:winTop<0.5,d:'Top-3 ví phía '+(main>0?'mua':'bán')+' chiếm '+(winTop*100).toFixed(0)+'%'}
+    ];
+  }
+  var score=ind.filter(function(i){return i.ok}).length;
+  var quality=main===0?'Cân bằng':(score>=4?'Cao':score===3?'Vừa':'Thấp');
+  /* cụm lệnh */
+  var med=median(tr.map(function(t){return t.usd})),cl=[],open=new Map();
+  tr.forEach(function(t){var key=t.wallet+'|'+t.side,c=open.get(key);
+    if(c&&t.ts-c.end<=600){c.end=t.ts;c.sum+=t.usd;c.n++;c.p1=t.price}
+    else{c={w:t.wallet,side:t.side,start:t.ts,end:t.ts,sum:t.usd,n:1,p0:t.price,p1:t.price};open.set(key,c);cl.push(c)}});
+  var minEv=Math.max(4*med,0.005*tot);
+  var events=cl.filter(function(c){return c.sum>=minEv}).sort(function(a,b){return b.sum-a.sum}).slice(0,6);
+  /* giá thực tế và dự kiến AMM */
+  var f5=median(tr.slice(0,5).map(function(t){return t.price})),l5=median(tr.slice(-5).map(function(t){return t.price}));
+  var actual=l5/f5-1,implied=null;
+  if(liq>0){var a=Math.abs(net)/(liq/2);implied=net>=0?Math.pow(1+a,2)-1:1/Math.pow(1+a,2)-1}
+  return {buy:buy,sell:sell,nb:nb,ns:ns,tot:tot,net:net,ratio:ratio,main:main,core:core,top:top,ws:ws,netBuyers:netBuyers,netSellers:netSellers,
+    wash:wash,tb:tb,tsl:tsl,topBuyShare:topBuyShare,topSellShare:topSellShare,crowd:crowd,segs:segs,segAgree:segAgree,ind:ind,score:score,
+    quality:quality,events:events,actual:actual,implied:implied,span:tr[tr.length-1].ts-tr[0].ts,first:tr[0].ts,last:tr[tr.length-1].ts};
+}
+
+/* ---------- nhận diện mô hình giá ---------- */
+function pivots(b,k){
+  var P=[];
+  for(var i=k;i<b.length-k;i++){
+    var hi=true,lo=true;
+    for(var j=1;j<=k;j++){
+      if(!(b[i].h>=b[i-j].h&&b[i].h>b[i+j].h))hi=false;
+      if(!(b[i].l<=b[i-j].l&&b[i].l<b[i+j].l))lo=false;
+    }
+    if(hi)P.push({i:i,type:'H',p:b[i].h});
+    if(lo)P.push({i:i,type:'L',p:b[i].l});
+  }
+  return P;
+}
+function detect(b){
+  var out={pats:[],lines:[],cvdLines:[],levels:[],piv:[]};
+  var n=b.length;if(n<12){out.pats.push({tone:'mute',tag:'Ít dữ liệu',title:'Chưa đủ thanh nến',text:'Cần ít nhất khoảng 12 thanh nến để nhận diện mô hình.'});return out}
+  var k=Math.max(2,Math.min(5,Math.round(n/30)));
+  var P=pivots(b,k),H=P.filter(function(p){return p.type==='H'}),L=P.filter(function(p){return p.type==='L'});
+  out.piv=P;
+  var last=b[n-1].c,first=b[0].o;
+  var avgRange=b.reduce(function(s,x){return s+(x.h-x.l)/x.c},0)/n;
+  /* xu hướng */
+  var h3=H.slice(-3),l3=L.slice(-3);
+  if(h3.length>=2&&l3.length>=2){
+    var hu=h3[h3.length-1].p>h3[0].p*1.005,hd=h3[h3.length-1].p<h3[0].p*0.995;
+    var lu=l3[l3.length-1].p>l3[0].p*1.005,ld=l3[l3.length-1].p<l3[0].p*0.995;
+    if(hu&&lu)out.pats.push({tone:'good',tag:'Xu hướng',title:'Xu hướng tăng (đỉnh sau cao hơn, đáy sau cao hơn)',text:'Các đỉnh và đáy gần nhất đều nâng dần. Xu hướng tăng còn nguyên cho đến khi giá thủng đáy gần nhất ('+fmtP(l3[l3.length-1].p)+').'});
+    else if(hd&&ld)out.pats.push({tone:'bad',tag:'Xu hướng',title:'Xu hướng giảm (đỉnh sau thấp hơn, đáy sau thấp hơn)',text:'Các đỉnh và đáy gần nhất đều hạ dần. Phe bán còn chủ động cho đến khi giá vượt đỉnh gần nhất ('+fmtP(h3[h3.length-1].p)+').'});
+    else out.pats.push({tone:'mute',tag:'Xu hướng',title:'Xu hướng chưa rõ',text:'Đỉnh và đáy gần nhất không cùng chiều nên chưa có xu hướng rõ ràng.'});
+    /* tam giác */
+    var hFlat=Math.abs(h3[h3.length-1].p/h3[0].p-1)<0.015,lFlat=Math.abs(l3[l3.length-1].p/l3[0].p-1)<0.015;
+    if(h3.length>=3&&l3.length>=3){
+      if(hFlat&&lu)out.pats.push({tone:'good',tag:'Mô hình',title:'Tam giác tăng',text:'Đỉnh đi ngang quanh '+fmtP(h3[h3.length-1].p)+' còn đáy nâng dần. Giá bị nén dưới một trần, thường phá lên nếu vượt trần với khối lượng.'});
+      else if(lFlat&&hd)out.pats.push({tone:'bad',tag:'Mô hình',title:'Tam giác giảm',text:'Đáy đi ngang quanh '+fmtP(l3[l3.length-1].p)+' còn đỉnh hạ dần. Nếu thủng sàn này, giá thường trượt tiếp.'});
+      else if(hd&&lu)out.pats.push({tone:'warn',tag:'Mô hình',title:'Tam giác hội tụ (nêm nén)',text:'Đỉnh hạ, đáy nâng nên biên độ co lại. Giá sắp chọn hướng, chờ phá vỡ ra khỏi hai cạnh.'});
+    }
+    if(out.lines&&h3.length>=2){out.lines.push({i1:h3[0].i,p1:h3[0].p,i2:h3[h3.length-1].i,p2:h3[h3.length-1].p,c:'--down',dash:[],w:1.2});}
+    if(l3.length>=2){out.lines.push({i1:l3[0].i,p1:l3[0].p,i2:l3[l3.length-1].i,p2:l3[l3.length-1].p,c:'--up',dash:[],w:1.2})}
+  }
+  /* hỗ trợ / kháng cự */
+  var pr=P.map(function(p){return p.p}).sort(function(a,b){return a-b}),grp=[];
+  pr.forEach(function(p){var g=grp[grp.length-1];if(g&&p/g.mean<1.015){g.sum+=p;g.n++;g.mean=g.sum/g.n}else grp.push({sum:p,n:1,mean:p})});
+  var lv=grp.filter(function(g){return g.n>=2}).map(function(g){return {p:g.mean,n:g.n}});
+  lv.sort(function(a,b){return Math.abs(a.p/last-1)-Math.abs(b.p/last-1)});lv=lv.slice(0,4);
+  out.levels=lv;
+  if(lv.length){
+    var txt=lv.slice().sort(function(a,b){return b.p-a.p}).map(function(l){return (l.p>last?'Kháng cự ':'Hỗ trợ ')+fmtP(l.p)+' ('+l.n+' lần chạm)'}).join(' · ');
+    out.pats.push({tone:'info',tag:'Vùng giá',title:'Hỗ trợ và kháng cự gần giá hiện tại',text:txt+'. Giá hiện tại '+fmtP(last)+'.'});
+    /* phá vỡ */
+    lv.forEach(function(l){
+      var pre=b[Math.max(0,n-5)].c,now=last;
+      if(pre<l.p&&now>l.p*1.005)out.pats.push({tone:'good',tag:'Phá vỡ',title:'Vừa đóng cửa trên kháng cự '+fmtP(l.p),text:'Giá đã vượt vùng bị chạm '+l.n+' lần. Nếu giữ được trên vùng này khi quay lại thử (retest), phá vỡ mới đáng tin.'});
+      else if(pre>l.p&&now<l.p*0.995)out.pats.push({tone:'bad',tag:'Phá vỡ',title:'Vừa đóng cửa dưới hỗ trợ '+fmtP(l.p),text:'Giá đã thủng vùng bị chạm '+l.n+' lần. Vùng này giờ có thể thành kháng cự khi giá hồi lên.'});
+    });
+  }
+  /* đi ngang */
+  var m=Math.min(n,Math.max(20,Math.round(n/2))),seg=b.slice(-m),mx=-1,mn=1e18;
+  seg.forEach(function(x){if(x.h>mx)mx=x.h;if(x.l<mn)mn=x.l});
+  var rg=mx-mn,netMove=Math.abs(seg[seg.length-1].c-seg[0].o);
+  if(rg>0&&netMove/rg<0.35&&rg/((mx+mn)/2)<avgRange*14){
+    var topT=seg.filter(function(x){return x.h>mx-rg*0.15}).length,botT=seg.filter(function(x){return x.l<mn+rg*0.15}).length;
+    if(topT>=2&&botT>=2){
+      out.pats.push({tone:'warn',tag:'Mô hình',title:'Đi ngang trong biên độ '+fmtP(mn)+' – '+fmtP(mx),text:'Giá dao động trong hộp suốt '+m+' thanh nến, chạm trần '+topT+' lần và đáy '+botT+' lần. Hướng đi tiếp theo chỉ rõ khi giá đóng cửa ra ngoài hộp.'});
+      out.lines.push({i1:n-m,p1:mx,i2:n-1,p2:mx,c:'--warn',dash:[5,4],w:1.2});
+      out.lines.push({i1:n-m,p1:mn,i2:n-1,p2:mn,c:'--warn',dash:[5,4],w:1.2});
+    }
+  }
+  /* hai đỉnh / hai đáy */
+  if(H.length>=2){
+    var a=H[H.length-2],c2=H[H.length-1];
+    if(Math.abs(a.p/c2.p-1)<0.02&&c2.i-a.i>=k*2){
+      var tro=1e18;for(var i=a.i;i<=c2.i;i++)if(b[i].l<tro)tro=b[i].l;
+      var depth=(Math.min(a.p,c2.p)-tro)/Math.min(a.p,c2.p);
+      if(depth>=0.03){
+        var conf=last<tro;
+        out.pats.push({tone:conf?'bad':'warn',tag:'Mô hình',title:conf?'Hai đỉnh đã xác nhận (thủng đường cổ '+fmtP(tro)+')':'Có dạng hai đỉnh (M), chờ xác nhận',text:'Hai đỉnh gần bằng nhau quanh '+fmtP((a.p+c2.p)/2)+', đáy giữa '+fmtP(tro)+' (sâu '+(depth*100).toFixed(1)+'%). Xác nhận khi giá đóng cửa dưới đường cổ; đo từ đỉnh đến cổ cho mục tiêu giảm tham khảo '+fmtP(tro-(Math.min(a.p,c2.p)-tro))+'.'});
+        out.lines.push({i1:a.i,p1:a.p,i2:c2.i,p2:c2.p,c:'--down',dash:[2,3],w:1.6});
+        out.lines.push({i1:a.i,p1:tro,i2:n-1,p2:tro,c:'--down',dash:[6,4],w:1.2});
+      }
+    }
+  }
+  if(L.length>=2){
+    var a2=L[L.length-2],c3=L[L.length-1];
+    if(Math.abs(a2.p/c3.p-1)<0.02&&c3.i-a2.i>=k*2){
+      var pk=-1;for(var i2=a2.i;i2<=c3.i;i2++)if(b[i2].h>pk)pk=b[i2].h;
+      var dp=(pk-Math.max(a2.p,c3.p))/pk;
+      if(dp>=0.03){
+        var cf=last>pk;
+        out.pats.push({tone:cf?'good':'warn',tag:'Mô hình',title:cf?'Hai đáy đã xác nhận (vượt đường cổ '+fmtP(pk)+')':'Có dạng hai đáy (W), chờ xác nhận',text:'Hai đáy gần bằng nhau quanh '+fmtP((a2.p+c3.p)/2)+', đỉnh giữa '+fmtP(pk)+'. Xác nhận khi giá đóng cửa trên đường cổ.'});
+        out.lines.push({i1:a2.i,p1:a2.p,i2:c3.i,p2:c3.p,c:'--up',dash:[2,3],w:1.6});
+        out.lines.push({i1:a2.i,p1:pk,i2:n-1,p2:pk,c:'--up',dash:[6,4],w:1.2});
+      }
+    }
+  }
+  /* pump rồi xả */
+  var iMax=0;b.forEach(function(x,i){if(x.h>b[iMax].h)iMax=i});
+  var base=1e18;for(var q=0;q<=iMax;q++)if(b[q].l<base)base=b[q].l;
+  var up=b[iMax].h/base-1,dd=1-last/b[iMax].h;
+  if(up>=1&&dd>=0.4&&iMax<n-2)out.pats.push({tone:'bad',tag:'Mô hình',title:'Pump rồi xả (đỉnh nhọn)',text:'Giá tăng '+(up*100).toFixed(0)+'% lên '+fmtP(b[iMax].h)+' rồi mất '+(dd*100).toFixed(0)+'% từ đỉnh. Dạng này thường là dòng tiền vào nhanh rồi chốt sạch; vùng đỉnh nhọn là kháng cự rất nặng.'});
+  else if(up>=1&&dd<0.15&&iMax>=n-3)out.pats.push({tone:'warn',tag:'Mô hình',title:'Đang ở đỉnh sau một nhịp tăng mạnh',text:'Giá tăng '+(up*100).toFixed(0)+'% trong khung này và đang sát đỉnh. Rủi ro đảo chiều mạnh cao, đặc biệt khi lệnh bán lớn xuất hiện.'});
+  /* nến cuối */
+  if(n>=2){
+    var x=b[n-1],y=b[n-2],body=Math.abs(x.c-x.o),rgx=x.h-x.l||1e-18,up2=x.h-Math.max(x.o,x.c),lw=Math.min(x.o,x.c)-x.l;
+    var cx=null;
+    if(body/rgx<0.1)cx={tone:'mute',t:'Nến doji',d:'Thân rất nhỏ: phe mua và bán cân bằng, thị trường lưỡng lự.'};
+    else if(lw>body*2&&up2<body*0.6&&last<=Math.min(y.o,y.c)*1.01)cx={tone:'good',t:'Nến búa (hammer)',d:'Bóng dưới dài: giá bị đạp xuống rồi kéo lại. Có thể là tín hiệu đáy ngắn hạn nếu nến sau xác nhận.'};
+    else if(up2>body*2&&lw<body*0.6&&last>=Math.max(y.o,y.c)*0.99)cx={tone:'bad',t:'Nến sao băng (shooting star)',d:'Bóng trên dài: giá bị đẩy lên rồi bị bán xuống. Có thể là tín hiệu đỉnh ngắn hạn.'};
+    else if(x.c>x.o&&y.c<y.o&&x.c>y.o&&x.o<y.c)cx={tone:'good',t:'Nến nhấn chìm tăng',d:'Nến xanh bao trùm nến đỏ liền trước: lực mua lấn át.'};
+    else if(x.c<x.o&&y.c>y.o&&x.o>y.c&&x.c<y.o)cx={tone:'bad',t:'Nến nhấn chìm giảm',d:'Nến đỏ bao trùm nến xanh liền trước: lực bán lấn át.'};
+    if(cx)out.pats.push({tone:cx.tone,tag:'Nến cuối',title:cx.t,text:cx.d});
+  }
+  /* phân kỳ giá - CVD */
+  var estNote=b[0].real?'':' (CVD ở khung này là ước lượng nên độ tin cậy thấp)';
+  var dv=function(arr,type){
+    if(arr.length<2)return;
+    var a=arr[arr.length-2],c=arr[arr.length-1];if(c.i-a.i<5)return;
+    var ca=b[a.i].cvd,cc=b[c.i].cvd,rng2=Math.max(1,Math.abs(b[n-1].cvd-b[0].cvd),b.reduce(function(s,x){return Math.max(s,Math.abs(x.d))},0)*3);
+    if(type==='H'&&c.p>a.p*1.03&&cc<ca-0.05*rng2){
+      out.pats.push({tone:'warn',tag:'Phân kỳ',title:'Phân kỳ giảm: giá lên đỉnh mới nhưng CVD thấp hơn',text:'Đỉnh sau cao hơn '+((c.p/a.p-1)*100).toFixed(1)+'% nhưng mua ròng cộng dồn lại thấp hơn, tức đà mua yếu đi'+estNote+'.'});
+      out.lines.push({i1:a.i,p1:a.p,i2:c.i,p2:c.p,c:'--warn',dash:[4,3],w:1.6});out.cvdLines.push({i1:a.i,p1:ca,i2:c.i,p2:cc,c:'--warn',dash:[4,3],w:1.6});
+    }
+    if(type==='L'&&c.p<a.p*0.97&&cc>ca+0.05*rng2){
+      out.pats.push({tone:'warn',tag:'Phân kỳ',title:'Phân kỳ tăng: giá xuống đáy mới nhưng CVD cao hơn',text:'Đáy sau thấp hơn '+((1-c.p/a.p)*100).toFixed(1)+'% nhưng mua ròng cộng dồn lại cao hơn, tức lực bán đang cạn'+estNote+'.'});
+      out.lines.push({i1:a.i,p1:a.p,i2:c.i,p2:c.p,c:'--warn',dash:[4,3],w:1.6});out.cvdLines.push({i1:a.i,p1:ca,i2:c.i,p2:cc,c:'--warn',dash:[4,3],w:1.6});
+    }
+  };
+  dv(H,'H');dv(L,'L');
+  /* thanh nến đột biến */
+  var big=b.filter(function(x){return (x.h-x.l)/x.c>avgRange*3.5}).length;
+  if(big>0&&n>=30)out.pats.push({tone:'mute',tag:'Biến động',title:big+' thanh nến có biên độ gấp hơn 3,5 lần bình thường',text:'Giá có những cú giật mạnh. Ở pool mỏng, một lệnh lớn có thể tạo ra các cây nến râu dài như vậy.'});
+  return out;
+}
+
+/* ---------- vẽ biểu đồ ---------- */
+var geo=null;
+function drawChart(){
+  var cv=$('#chart'),b=S.bars[S.tf];if(!b||!b.length)return;
+  var det=S.det,box=$('#cbox'),W=box.clientWidth,H=Math.max(480,Math.min(680,Math.round(W*0.72)));
+  var dpr=window.devicePixelRatio||1;cv.width=W*dpr;cv.height=H*dpr;cv.style.height=H+'px';
+  var g=cv.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,W,H);
+  var ink=css('--ink'),mute=css('--mute'),grid=css('--grid'),up=css('--up'),dn=css('--down'),cvdC=css('--cvd'),warn=css('--warn'),pricec=css('--price');
+  var n=b.length,L=8,R=64,Bm=22,T=8,avail=H-T-Bm-16,hP=Math.round(avail*0.56),hC=Math.round(avail*0.26),hD=avail-hP-hC;
+  var yP0=T,yC0=yP0+hP+8,yD0=yC0+hC+8,cw=W-L-R;
+  var X=function(i){return L+(i+0.5)*cw/n};
+  var logp=$('#logp').checked,tf=function(p){return logp?Math.log(p):p};
+  var mx=-1e18,mn=1e18;b.forEach(function(x){if(x.h>mx)mx=x.h;if(x.l<mn)mn=x.l});
+  var a=tf(mn),c=tf(mx),pad=(c-a)*0.06||1e-9;a-=pad;c+=pad;
+  var YP=function(p){return yP0+hP-(tf(p)-a)/(c-a)*hP};
+  g.font='11px '+css('--mono');g.textBaseline='middle';
+  /* lưới giá */
+  g.lineWidth=1;
+  for(var t=0;t<=4;t++){var v=a+(c-a)*t/4,y=yP0+hP-hP*t/4;g.strokeStyle=grid;g.beginPath();g.moveTo(L,y);g.lineTo(L+cw,y);g.stroke();
+    g.fillStyle=mute;g.textAlign='left';g.fillText(fmtP(logp?Math.exp(v):v),L+cw+6,y)}
+  /* nến */
+  var bw=Math.max(1,Math.min(14,cw/n*0.68));
+  b.forEach(function(x,i){var col=x.c>=x.o?up:dn,xx=X(i);g.strokeStyle=col;g.fillStyle=col;g.lineWidth=1;
+    g.beginPath();g.moveTo(xx,YP(x.h));g.lineTo(xx,YP(x.l));g.stroke();
+    var y1=YP(x.o),y2=YP(x.c);g.fillRect(xx-bw/2,Math.min(y1,y2),bw,Math.max(1,Math.abs(y2-y1)))});
+  /* mô hình */
+  if($('#ovl').checked&&det){
+    det.levels.forEach(function(l){var y=YP(l.p);g.strokeStyle=warn;g.globalAlpha=.8;g.setLineDash([3,4]);g.lineWidth=1;g.beginPath();g.moveTo(L,y);g.lineTo(L+cw,y);g.stroke();g.setLineDash([]);g.globalAlpha=1;
+      g.fillStyle=warn;g.textAlign='left';g.fillText((l.p>b[n-1].c?'KC ':'HT ')+l.n+'x',L+4,y-7)});
+    det.lines.forEach(function(ln){g.strokeStyle=css(ln.c);g.lineWidth=ln.w;g.setLineDash(ln.dash);g.beginPath();g.moveTo(X(ln.i1),YP(ln.p1));g.lineTo(X(ln.i2),YP(ln.p2));g.stroke();g.setLineDash([])});
+    det.piv.forEach(function(p){var xx=X(p.i),y=YP(p.p);g.fillStyle=p.type==='H'?dn:up;g.beginPath();
+      if(p.type==='H'){g.moveTo(xx,y-4);g.lineTo(xx-3.5,y-10);g.lineTo(xx+3.5,y-10)}else{g.moveTo(xx,y+4);g.lineTo(xx-3.5,y+10);g.lineTo(xx+3.5,y+10)}
+      g.closePath();g.fill()});
+  }
+  /* CVD */
+  var cmx=-1e18,cmn=1e18;b.forEach(function(x){if(x.cvd>cmx)cmx=x.cvd;if(x.cvd<cmn)cmn=x.cvd});
+  var cp=(cmx-cmn)*0.08||1;cmx+=cp;cmn-=cp;
+  var YC=function(v){return yC0+hC-(v-cmn)/(cmx-cmn)*hC};
+  g.strokeStyle=grid;g.lineWidth=1;for(var u=0;u<=2;u++){var yy=yC0+hC*u/2;g.beginPath();g.moveTo(L,yy);g.lineTo(L+cw,yy);g.stroke();
+    g.fillStyle=mute;g.textAlign='left';g.fillText(usd(cmx-(cmx-cmn)*u/2),L+cw+6,yy)}
+  if(cmn<0&&cmx>0){g.strokeStyle=mute;g.globalAlpha=.5;g.setLineDash([2,3]);g.beginPath();g.moveTo(L,YC(0));g.lineTo(L+cw,YC(0));g.stroke();g.setLineDash([]);g.globalAlpha=1}
+  g.beginPath();b.forEach(function(x,i){var xx=X(i),yy2=YC(x.cvd);if(i)g.lineTo(xx,yy2);else g.moveTo(xx,yy2)});
+  g.strokeStyle=cvdC;g.lineWidth=1.8;g.stroke();
+  g.lineTo(X(n-1),YC(Math.max(cmn,Math.min(cmx,0))));g.lineTo(X(0),YC(Math.max(cmn,Math.min(cmx,0))));g.closePath();g.globalAlpha=.1;g.fillStyle=cvdC;g.fill();g.globalAlpha=1;
+  if($('#ovl').checked&&det)det.cvdLines.forEach(function(ln){g.strokeStyle=css(ln.c);g.lineWidth=ln.w;g.setLineDash(ln.dash);g.beginPath();g.moveTo(X(ln.i1),YC(ln.p1));g.lineTo(X(ln.i2),YC(ln.p2));g.stroke();g.setLineDash([])});
+  g.fillStyle=mute;g.textAlign='left';g.fillText('CVD',L+4,yC0+9);
+  /* delta */
+  var dm=1;b.forEach(function(x){if(Math.abs(x.d)>dm)dm=Math.abs(x.d)});
+  var zy=yD0+hD/2;
+  g.strokeStyle=grid;g.beginPath();g.moveTo(L,zy);g.lineTo(L+cw,zy);g.stroke();
+  b.forEach(function(x,i){var h=x.d/dm*(hD/2-2);g.fillStyle=x.d>=0?up:dn;g.fillRect(X(i)-bw/2,h>=0?zy-h:zy,bw,Math.max(1,Math.abs(h)))});
+  g.fillStyle=mute;g.textAlign='left';g.fillText('Mua−bán mỗi thanh',L+4,yD0+9);g.fillText('±'+usd(dm),L+cw+6,zy);
+  /* trục thời gian */
+  var span=b[n-1].t-b[0].t,lg=span>2.5*86400;g.fillStyle=mute;g.textBaseline='alphabetic';g.textAlign='center';
+  for(var q=0;q<6;q++){var ii=Math.round((n-1)*q/5);g.fillText(lg?dFmt(b[ii].t):tFmt(b[ii].t),Math.min(W-R-14,Math.max(L+14,X(ii))),H-6)}
+  /* crosshair */
+  if(S.hover>=0&&S.hover<n){var hx=X(S.hover);g.strokeStyle=mute;g.globalAlpha=.6;g.setLineDash([3,3]);g.beginPath();g.moveTo(hx,yP0);g.lineTo(hx,yD0+hD);g.stroke();g.setLineDash([]);g.globalAlpha=1}
+  geo={L:L,cw:cw,n:n,W:W,H:H};
+}
+function onMove(e){
+  var cv=$('#chart'),b=S.bars[S.tf];if(!b||!geo)return;
+  var r=cv.getBoundingClientRect(),x=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
+  var i=Math.floor((x-geo.L)/geo.cw*geo.n);
+  if(i<0||i>=geo.n){hideTip();return}
+  S.hover=i;drawChart();
+  var k=b[i],tip=$('#tip');
+  var f=k.real?'<br>Số lệnh <b>'+k.n+'</b>':'';
+  tip.innerHTML='<div style="margin-bottom:4px;color:var(--mute)">'+tFmt(k.t,true)+(k.real?'':' · ước lượng')+'</div>'+
+   'O <b>'+fmtP(k.o)+'</b> H <b>'+fmtP(k.h)+'</b><br>L <b>'+fmtP(k.l)+'</b> C <b>'+fmtP(k.c)+'</b><br>'+
+   'Mua <b class="up">'+usd(k.buy)+'</b> · Bán <b class="dn">'+usd(k.sell)+'</b><br>Ròng <b>'+usd(k.d)+'</b> · CVD <b>'+usd(k.cvd)+'</b>'+f;
+  tip.style.display='block';
+  var tx=x+14;if(tx>geo.W-190)tx=x-190;tip.style.left=Math.max(4,tx)+'px';tip.style.top='10px';
+}
+function hideTip(){S.hover=-1;$('#tip').style.display='none';drawChart()}
+
+/* ---------- dựng giao diện kết quả ---------- */
+function pill(t,tone){return '<span class="pill '+tone+'">'+esc(t)+'</span>'}
+function renderTabs(){
+  var h='';
+  ['1h','4h','1d','1m','5m','15m'].forEach(function(k){if(S.bars[k]&&S.bars[k].length>=8)h+='<button type="button" class="tab" data-tf="'+k+'" aria-pressed="'+(S.tf===k)+'">'+k+'</button>'});
+  h+='<button type="button" class="tab" data-tf="real" aria-pressed="'+(S.tf==='real')+'">Lệnh thật</button>';
+  $('#tabs').innerHTML=h;
+}
+function pickTf(tf){
+  S.tf=tf;S.det=detect(S.bars[tf]);renderTabs();
+  var nt=$('#srcnote');
+  if(tf==='real'){nt.hidden=false;nt.className='banner';nt.textContent='Nến được ghép từ các lệnh swap thật trong cửa sổ '+spanText(S.flow?S.flow.span:0)+', mỗi thanh gộp '+Math.round((S.bars.real[1]?S.bars.real[1].t-S.bars.real[0].t:60)/60)+' phút. CVD là dữ liệu thật.'}
+  else{nt.hidden=false;nt.className='banner warn';nt.textContent='Khung '+tf+': giá và mô hình là dữ liệu thật; đường CVD và cột mua/bán là ước lượng từ hình dáng nến nên chỉ để tham khảo. Muốn thấy dòng tiền có thật, chuyển sang "Lệnh thật".'}
+  renderPats();drawChart();
+}
+function spanText(s){return s>=7200?(s/3600).toFixed(1)+' giờ':Math.round(s/60)+' phút'}
+function renderPats(){
+  var d=S.det,h='';
+  d.pats.forEach(function(p){h+='<div class="pat"><div class="pb">'+pill(p.tag,p.tone==='mute'?'mute':p.tone)+'</div><div><div class="pt">'+esc(p.title)+'</div><div class="px">'+esc(p.text)+'</div></div></div>'});
+  $('#pats').innerHTML=h||'<p class="sub">Chưa nhận diện được mô hình rõ ràng ở khung này.</p>';
+}
+function renderFlow(){
+  var f=S.flow;if(!f)return;
+  var dirw=f.main>0?'mua':'bán',cls=f.net>=0?'up':'dn';
+  var kp=[
+    ['Tổng khối lượng',usd(f.tot),''],['Mua',usd(f.buy),'up'],['Bán',usd(f.sell),'dn'],['Mua ròng',usd(f.net),cls],
+    ['Tỷ lệ mua ròng',pc(f.ratio),cls],['Tỷ lệ lõi (bỏ 3 lệnh lớn)',pc(f.core),f.core>=0?'up':'dn'],
+    ['Giá trong cửa sổ',pc(f.actual),f.actual>=0?'up':'dn'],['Cửa sổ',spanText(f.span),'']];
+  $('#kpis').innerHTML=kp.map(function(k){return '<div class="kpi"><div class="l">'+k[0]+'</div><div class="v '+k[2]+'">'+k[1]+'</div></div>'}).join('');
+  var F=[];
+  var qt=f.quality==='Cao'?'good':f.quality==='Vừa'?'warn':f.quality==='Thấp'?'bad':'info';
+  if(f.main===0)F.push({t:'info',x:'Mua và bán gần cân bằng ('+pc(f.ratio)+', ròng '+usd(f.net)+') trong '+spanText(f.span)+'. Chưa có bên nào chiếm ưu thế.'});
+  else F.push({t:qt,x:'Bên '+dirw+' nhỉnh hơn: ròng '+usd(f.net)+' trên tổng '+usd(f.tot)+' ('+pc(f.ratio)+'). Độ vững của kết luận này: '+f.quality+' ('+f.score+'/5 chỉ báo cùng chiều).'});
+  if(f.main!==0){
+    var same=sg(f.core,0.02)===f.main;
+    F.push({t:same?'good':'warn',x:same?'Bỏ 3 lệnh lớn nhất, dòng tiền vẫn nghiêng về bên '+dirw+' ('+pc(f.core)+'). Không phụ thuộc vài lệnh khủng.':'Bỏ 3 lệnh lớn nhất, dòng tiền chỉ còn '+pc(f.core)+' nên kết quả phụ thuộc nhiều vào vài lệnh lớn.'});
+  }
+  F.push({t:f.topSellShare>=0.5||f.topBuyShare>=0.5?'warn':'info',x:'Top-3 ví bán chiếm '+(f.topSellShare*100).toFixed(0)+'% lực bán; top-3 ví mua chiếm '+(f.topBuyShare*100).toFixed(0)+'% lực mua. '+(f.topSellShare>=0.5||f.topBuyShare>=0.5?'Một bên bị chi phối bởi vài ví, rủi ro thao túng cao hơn.':'Hai bên đều khá phân tán.')});
+  F.push({t:'info',x:'Đám đông còn lại (bỏ 3 ví mua lớn nhất và 3 ví bán lớn nhất): '+pc(f.crowd)+'. Có '+f.netBuyers+' ví mua ròng và '+f.netSellers+' ví bán ròng.'});
+  if(f.events.length){var e=f.events[0];F.push({t:e.side==='buy'?'good':'bad',x:'Cụm lệnh lớn nhất: ví '+short(e.w)+' '+(e.side==='buy'?'mua':'bán')+' '+usd(e.sum)+' ('+e.n+' lệnh trong '+Math.max(1,Math.round((e.end-e.start)/60))+' phút) lúc '+tFmt(e.start,true)+'.'})}
+  if(f.implied!=null){
+    var diff=f.actual-f.implied,msg;
+    if(Math.abs(diff)<0.03)msg='Giá thực tế ('+pc(f.actual)+') khớp mức dòng tiền giải thích ('+pc(f.implied)+'). Không thấy yếu tố lạ.';
+    else if(sg(f.actual,0.01)!==sg(f.implied,0.01)&&Math.abs(f.actual)>0.02)msg='Giá ('+pc(f.actual)+') đi ngược chiều dòng tiền ('+pc(f.implied)+'). Cần nghi ngờ thanh khoản vừa thêm/rút hoặc lệnh ngoài cửa sổ dữ liệu.';
+    else if(Math.abs(f.actual)<Math.abs(f.implied))msg='Giá chỉ đi '+pc(f.actual)+' trong khi dòng tiền giải thích '+pc(f.implied)+'. Có lực đỡ: có thể thanh khoản được thêm hoặc có dòng tiền đối ứng ngoài cửa sổ.';
+    else msg='Giá đi '+pc(f.actual)+' nhiều hơn mức dòng tiền giải thích ('+pc(f.implied)+'). Có thể pool mỏng đi hoặc thanh khoản bị rút.';
+    F.push({t:Math.abs(diff)<0.03?'good':'warn',x:msg});
+  }
+  $('#finds').innerHTML=F.map(function(i){return '<li class="'+i.t+'"><span class="dot"></span><span>'+esc(i.x)+'</span></li>'}).join('');
+  $('#symtitle').textContent='Điều đáng chú ý · '+S.symbol;
+  var sp=$('#srcpill');sp.className='pill '+(S.src==='demo'?'warn':'good');sp.textContent=S.src==='demo'?'DỮ LIỆU MẪU':S.src==='paste'?'DỮ LIỆU DÁN':'DỮ LIỆU THẬT';
+  /* chất lượng */
+  var ck=$('#chk');
+  if(f.main===0)ck.innerHTML='<div>Dòng tiền cân bằng nên chưa chấm độ vững.</div>';
+  else ck.innerHTML=f.ind.map(function(i){return '<div><span class="'+(i.ok?'ok':'no')+'">'+(i.ok?'Đạt':'Chưa')+'</span> · '+esc(i.k)+'<br><span class="sub">'+esc(i.d)+'</span></div>'}).join('');
+  $('#chkfoot').innerHTML='Độ vững: '+pill(f.quality,qt)+' &nbsp; Giao dịch hai chiều cùng ví (wash): '+(f.wash*100).toFixed(1)+'% khối lượng.';
+  /* AMM */
+  var am='';
+  if(f.implied==null)am='<p class="sub">Chưa có thanh khoản pool. Nhập thanh khoản ở mục "Dán dữ liệu thủ công" để so sánh.</p>';
+  else{
+    var a=Math.abs(f.net)/(S.liq/2);
+    am='<div class="kpis"><div class="kpi"><div class="l">Thanh khoản pool</div><div class="v">'+usd(S.liq)+'</div></div>'+
+     '<div class="kpi"><div class="l">Mua ròng / nửa pool</div><div class="v">'+(a*100).toFixed(2)+'%</div></div>'+
+     '<div class="kpi"><div class="l">Giá dự kiến</div><div class="v">'+pc(f.implied)+'</div></div>'+
+     '<div class="kpi"><div class="l">Giá thực tế</div><div class="v '+(f.actual>=0?'up':'dn')+'">'+pc(f.actual)+'</div></div></div>'+
+     '<p class="sub" style="margin-top:10px">Pool kiểu Uniswap có giá là hàm của lượng mua/bán ròng. Chênh lệch nhỏ hơn 3 điểm % là bình thường (phí swap 1% cũng tạo chênh nhẹ giữa giá mua và giá bán). Lệch lớn mới là dấu hiệu đáng xem.</p>';
+  }
+  $('#amm').innerHTML=am;
+  /* cụm lệnh */
+  var ev='<table><thead><tr><th>Thời điểm</th><th>Ví</th><th>Phía</th><th class="r">Giá trị</th><th class="r">Số lệnh</th><th class="r">Chiếm KL</th></tr></thead><tbody>';
+  f.events.forEach(function(e){ev+='<tr><td>'+tFmt(e.start,true)+'</td><td class="mono" title="'+esc(e.w)+'">'+esc(short(e.w))+'</td><td>'+pill(e.side==='buy'?'Mua':'Bán',e.side==='buy'?'good':'bad')+'</td><td class="r num">'+usd(e.sum)+'</td><td class="r num">'+e.n+'</td><td class="r num">'+(e.sum/f.tot*100).toFixed(1)+'%</td></tr>'});
+  if(!f.events.length)ev+='<tr><td colspan="6" class="sub">Không có cụm lệnh nào lớn bất thường.</td></tr>';
+  $('#events').innerHTML=ev+'</tbody></table>';
+  /* ví */
+  var wl=f.ws.slice().sort(function(a,b){return Math.abs(b.buy-b.sell)-Math.abs(a.buy-a.sell)}).slice(0,8);
+  var wt='<table><thead><tr><th>Ví</th><th class="r">Mua</th><th class="r">Bán</th><th class="r">Ròng</th><th class="r">Lệnh</th></tr></thead><tbody>';
+  wl.forEach(function(w){var n=w.buy-w.sell;wt+='<tr><td class="mono" title="'+esc(w.a)+'">'+esc(short(w.a))+'</td><td class="r num up">'+usd(w.buy)+'</td><td class="r num dn">'+usd(w.sell)+'</td><td class="r num">'+usd(n)+'</td><td class="r num">'+w.n+'</td></tr>'});
+  $('#wallets').innerHTML=wt+'</tbody></table>';
+}
+function renderMtf(){
+  var h='<table><thead><tr><th>Khung</th><th class="r">Số nến</th><th class="r">Giá đổi</th><th class="r">Mua ròng ước lượng</th><th class="r">Khối lượng</th><th>Nhãn</th></tr></thead><tbody>',any=false;
+  TF.forEach(function(f){var b=S.bars[f[0]];if(!b||b.length<8)return;any=true;
+    var pch=b[b.length-1].c/b[0].o-1,buy=0,sell=0;b.forEach(function(x){buy+=x.buy;sell+=x.sell});var r=(buy-sell)/((buy+sell)||1);
+    h+='<tr><td><b>'+f[0]+'</b></td><td class="r num">'+b.length+'</td><td class="r num '+(pch>=0?'up':'dn')+'">'+pc(pch)+'</td><td class="r num">'+pc(r)+'</td><td class="r num">'+usd(buy+sell)+'</td><td>'+pill('ƯỚC LƯỢNG','mute')+'</td></tr>'});
+  $('#mtf').innerHTML=any?h+'</tbody></table>':'<p class="sub">Chưa có dữ liệu nến. Với dữ liệu dán, hãy dán thêm JSON nến.</p>';
+}
+function renderBig(){
+  var frames=['1h','4h','1d'],rows='',trends=[],have=0,notes=[];
+  var h='<table><thead><tr><th>Khung</th><th class="r">Thời gian phủ</th><th class="r">Giá đổi</th><th>Xu hướng</th><th>Vùng giá gần nhất</th><th>Mô hình / tín hiệu</th></tr></thead><tbody>';
+  frames.forEach(function(f){
+    var b=S.bars[f];if(!b||b.length<12)return;have++;
+    var d=detect(b),last=b[b.length-1].c,pch=last/b[0].o-1;
+    var tr=d.pats.filter(function(p){return p.tag==='Xu hướng'})[0];
+    var tone=tr?tr.tone:'mute';trends.push(tone);
+    var tlabel=tone==='good'?'Tăng':tone==='bad'?'Giảm':'Chưa rõ';
+    var sup=null,res=null;
+    d.levels.forEach(function(l){if(l.p<last&&(!sup||l.p>sup.p))sup=l;if(l.p>last&&(!res||l.p<res.p))res=l});
+    var zone=(res?'KC '+fmtP(res.p)+' ('+res.n+'x)':'không thấy KC')+' · '+(sup?'HT '+fmtP(sup.p)+' ('+sup.n+'x)':'không thấy HT');
+    var ps=d.pats.filter(function(p){return p.tag==='Mô hình'||p.tag==='Phá vỡ'||p.tag==='Phân kỳ'}).map(function(p){return p.title});
+    var cover=(b[b.length-1].t-b[0].t)/86400;
+    var covt=cover>=2?Math.round(cover)+' ngày':Math.round(cover*24)+' giờ';
+    var up=0;b.forEach(function(x){if(x.h/b[0].o>6)up=1});
+    if(pch>5||up)notes.push('Khung '+f+' có cú tăng rất mạnh trong dữ liệu ('+pc(pch,0)+'), nên xu hướng và vùng giá dễ bị méo bởi đỉnh nhọn.');
+    var dnote=S.der&&S.der[f]?'<br><span class="sub">gộp từ nến '+S.der[f]+'</span>':'';
+    var few=b.length<30?'<br><span class="sub">chỉ '+b.length+' nến, độ tin cậy thấp</span>':'';
+    rows+='<tr><td><b>'+f+'</b>'+dnote+few+'</td><td class="r num">'+covt+'</td><td class="r num '+(pch>=0?'up':'dn')+'">'+pc(pch)+'</td><td>'+pill(tlabel,tone==='mute'?'mute':tone)+'</td><td class="num">'+esc(zone)+'</td><td style="white-space:normal;min-width:220px">'+(ps.length?esc(ps.join('; ')):'<span class="sub">Không có</span>')+'</td></tr>';
+  });
+  var errs=[];['1h','4h','1d'].forEach(function(f){var c=S.cstat&&S.cstat[f];if(c&&c.err)errs.push('nến '+f+': '+c.err)});
+  if(!have){$('#bigtable').innerHTML='<p class="sub">Chưa có đủ nến 1h/4h/1d để nhận diện mô hình (cần ít nhất 12 thanh). Coin có thể còn quá mới, hoặc sàn chưa trả nến khung lớn.'+(errs.length?' Lỗi ghi nhận: '+esc(errs.join('; '))+'.':'')+' Với dữ liệu dán, hãy dán JSON nến của khung lớn (chọn đúng khung).</p>';$('#bigfind').innerHTML='';return}
+  $('#bigtable').innerHTML=h+rows+'</tbody></table>';
+  var g=trends.filter(function(t){return t==='good'}).length,r=trends.filter(function(t){return t==='bad'}).length,F=[];
+  if(g===have&&have>1)F.push({t:'good',x:'Cả '+have+' khung lớn cùng xu hướng tăng. Hướng chính là tăng; nhịp giảm ở khung nhỏ nhiều khả năng chỉ là điều chỉnh.'});
+  else if(r===have&&have>1)F.push({t:'bad',x:'Cả '+have+' khung lớn cùng xu hướng giảm. Hướng chính là giảm; nhịp hồi ở khung nhỏ dễ bị bán ra, chưa nên coi là đảo chiều.'});
+  else if(g>0&&r>0)F.push({t:'warn',x:'Các khung lớn mâu thuẫn nhau (có khung tăng, có khung giảm). Thị trường đang ở giai đoạn chuyển pha, nên chờ khung lớn nhất (1d, 4h) chọn hướng.'});
+  else F.push({t:'info',x:'Các khung lớn chưa có xu hướng rõ (đỉnh đáy không cùng chiều). Giá đang đi ngang hoặc chưa đủ dữ liệu, hãy xem vùng hỗ trợ/kháng cự trong bảng.'});
+  notes.forEach(function(n){F.push({t:'warn',x:n})});
+  if(errs.length)F.push({t:'bad',x:'Có khung tải nến bị lỗi: '+errs.join('; ')+'. Tool đã tự gộp khung lớn từ nến nhỏ hơn nếu có thể.'});
+  var ders=Object.keys(S.der||{});if(ders.length)F.push({t:'info',x:'Khung '+ders.join(', ')+' được gộp từ nến nhỏ hơn (sàn trả thiếu hoặc coin còn mới). Cách gộp này cho OHLC chính xác nhưng chỉ phủ khoảng thời gian ngắn hơn.'});
+  F.push({t:'info',x:'Lưu ý: giá và mô hình ở khung lớn là dữ liệu thật. Còn dòng mua/bán ở khung lớn chỉ là ước lượng, nên muốn biết ai mua/bán hãy xem tab "Lệnh thật" và phần ví bên dưới (chỉ phủ khoảng vài giờ gần nhất).'});
+  $('#bigfind').innerHTML=F.map(function(i){return '<li class="'+i.t+'"><span class="dot"></span><span>'+esc(i.x)+'</span></li>'}).join('');
+}
+function start(noScroll){
+  S.flow=analyzeFlow(S.trades,S.liq);
+  if(!S.flow){setStatus('Dữ liệu quá ít để phân tích (cần ít nhất 20 lệnh).');return}
+  S.bars={real:barsFromTrades(S.trades)};
+  ensureFrames();
+  TF.forEach(function(f){var c=S.used[f[0]];if(c&&c.length)S.bars[f[0]]=barsFromCandles(c)});
+  $('#out').hidden=false;
+  renderFlow();renderMtf();renderBig();
+  var dflt=(S.bars['4h']&&S.bars['4h'].length>=15)?'4h':((S.bars['1h']&&S.bars['1h'].length>=15)?'1h':'real');
+  pickTf(dflt);
+  if(!noScroll)$('#sec-sum').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ---------- sự kiện ---------- */
+$('#go').addEventListener('click',liveRun);
+$('#demo').addEventListener('click',function(){demoRun(false)});
+$('#pgo').addEventListener('click',pasteRun);
+$('#contract').addEventListener('keydown',function(e){if(e.key==='Enter')liveRun()});
+['contract','net','poolin'].forEach(function(id){$('#'+id).addEventListener('input',updateLinks)});
+$('#tabs').addEventListener('click',function(e){var t=e.target.closest('.tab');if(t)pickTf(t.getAttribute('data-tf'))});
+$('#ovl').addEventListener('change',drawChart);$('#logp').addEventListener('change',drawChart);
+var cvEl=$('#chart');cvEl.addEventListener('mousemove',onMove);cvEl.addEventListener('mouseleave',hideTip);
+cvEl.addEventListener('touchstart',onMove,{passive:true});cvEl.addEventListener('touchmove',onMove,{passive:true});
+window.addEventListener('resize',function(){if(S.bars.real)drawChart()});
+$('#tbtn').addEventListener('click',function(){
+  var r=document.documentElement,cur=r.getAttribute('data-theme');
+  var dark=cur?cur==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;
+  r.setAttribute('data-theme',dark?'light':'dark');
+  try{localStorage.setItem('cvd-theme',dark?'light':'dark')}catch(e){}
+  if(S.bars.real)drawChart();
+});
+try{var th=localStorage.getItem('cvd-theme');if(th)document.documentElement.setAttribute('data-theme',th)}catch(e){}
+if(window.matchMedia)window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(){if(S.bars.real)drawChart()});
+updateLinks();
+setStatus('Nhập contract rồi bấm "Phân tích", hoặc bấm "Chạy demo" để xem thử.');
+demoRun(true);
+})();
+</script>
